@@ -1,5 +1,5 @@
 <template>
-    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column" >
         <header class="masthead">
             <div class="inner">
                 <h3 class="masthead-brand">
@@ -35,4 +35,5 @@
     .has-icon-left {
         margin-left: 10px;
     }
+
 </style>

@@ -8,30 +8,39 @@
                         </b-btn>
                     </div>
                     <div class="list-group bg-trans pad-btm bord-btm white-panel">
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('INBOX')">
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('INBOX'),activate(1)"
+                                :class="{ active : active_el == 1 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-down"></i>
                             Hòm thư
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('DRAFT')">
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('DRAFT'),activate(2)"
+                                :class="{ active : active_el == 2 }">
                             <i class="mdi mdi-dark mdi-email-open"></i>
                             Nháp
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('SENT')">
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SENT'),activate(3)"
+                                :class="{ active : active_el == 3 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-up"></i>
                             Đã gửi
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('SPAM')">
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SPAM'),activate(4)"
+                                :class="{ active : active_el == 4 }">
                             <i class="mdi mdi-dark mdi-alien"></i>
                             Spam
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('TRASH')">
+                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('TRASH'),activate(5)"
+                                :class="{ active : active_el == 5 }">
                             <i class="mdi mdi-dark mdi-delete"></i>
                             Thùng rác
+                        </button>
+                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('UNREAD')">
+                            <i class="mdi mdi-dark mdi-delete"></i>
+                            UNREAD
                         </button>
                     </div>
                 </div>
             </b-col>
-            <b-col cols="9" md="9" sm="12">
+            <b-col md="9" sm="12">
                 <div class="white-panel">
                     <div class="panel-header">
                         <b-navbar toggleable="md" variant="faded" type="light">
@@ -52,12 +61,12 @@
                     <div class="mail-list has-text-left">
                         <b-table :fields="fields" :items="emails">
                             <template slot="title" slot-scope="data">
-                                <h5>
+                                <a href="javascript:void(0);"><h5 @click="readEmail(data.item)">
                                     <span class="icon left">
                                         <i class="mdi mdi mdi-email"></i>
                                     </span>
                                     {{getField(data.item, 'Subject')}}
-                                </h5>
+                                </h5></a>
                             </template>
                             <template slot="sender" slot-scope="data">
                                 {{getField(data.item, 'From')}}
@@ -108,6 +117,8 @@
             <show-mail :mail="activeMail" @delete="mailDelete"></show-mail>
         </b-modal>
     </b-container>
+
+
     <b-container class="white-box" v-else>
         <h1 class="cover-heading">Cover your page.</h1>
         <p class="lead">Cover is a one-page template for building simple and beautiful home pages. Download, edit the
@@ -117,7 +128,6 @@
         </p>
     </b-container>
 </template>
-
 <script>
     import Mail from '../components/mail'
 
@@ -172,7 +182,8 @@
                 subject: '',
                 receiverEmail: '',
                 previousToken: '',
-                currentLabel: 'INBOX'
+                currentLabel: 'INBOX',
+                active_el: 0
             }
         },
 
@@ -311,6 +322,9 @@
                 })
             },
 
+            activate: function (el) {
+                this.active_el = el
+            },
             makeBody(to, from, subject, message) {
                 let Buffer = require('safe-buffer').Buffer
                 let emailLines = []
@@ -326,13 +340,11 @@
                 let base64EncodedEmail = new Buffer(email, 'UTF-8').toString('base64')
                 return base64EncodedEmail.replace(/\+/g, '-').replace(/\//g, '_')
             },
-
             onHiddenEditor(event) {
                 this.subject = ''
                 this.receiverEmail = ''
                 this.message = ''
             },
-
             findPublicKey(email) {
                 for (let i in this.contacts) {
                     if (this.contacts[i].email === email) {
@@ -341,7 +353,6 @@
                 }
                 return null
             },
-
             encodeing() {
                 let publicKey = this.findPublicKey(this.receiverEmail)
                 if (publicKey) {
@@ -352,11 +363,21 @@
                     }
                     openpgp.encrypt(options).then(ciphertext => {
                         this.message = ciphertext.data
+                        this.$toasted.show('Mã hóa thành công!', {
+                            theme: 'bubble',
+                            position: 'top-center',
+                            duration: 1000
+                        })
+                    })
+                } else {
+                    this.$toasted.show('Không thấy email', {
+                        theme: 'primary',
+                        position: 'top-center',
+                        duration: 1000
                     })
                 }
             }
         },
-
         async created() {
             await this.$axios.get('/api/key').then(res => {
                 this.contacts = res.data
@@ -390,7 +411,6 @@
             .btn {
                 text-align: left;
             }
-
         }
     }
 </style>

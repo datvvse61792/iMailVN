@@ -5,13 +5,13 @@ header {
   margin-bottom: 1rem; }
 
 .white-box {
-  background: white;
-  margin-bottom: 1rem;
-  padding: 10px; }
+  background-image: url("/static/a.jpg");
+  background-size: cover;
+
+ }
 
 .white-box {
-  max-width: 40em;
-  background: white;
+  background: black;
   color: black; }
 
 .table th, .table td {

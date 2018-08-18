@@ -111,38 +111,57 @@
                     })
                 })
             },
-
             async decodeEmail() {
-                let body = this.getBody(this.mail)
-                console.log(body)
                 let privKeyObj = openpgp.key.readArmored(localStorage.getItem('privateKey')).keys[0]
-                await privKeyObj.decrypt('hoanganhlamno1')
-                const options = {
-                    message: openpgp.message.readArmored(body),
-                    privateKeys: [privKeyObj]
-                }
-                openpgp.decrypt(options).then(plaintext => {
-                    this.decodedText = plaintext.data
-                }).catch(err => {
-                    console.log(err)
-                    this.$toasted.show('Khóa của bạn không hợp lệ', {
+                if (privKeyObj == null) {
+                    this.$toasted.show('Chưa có key. Vui lòng Tạo key hoặc nhập key từ máy tính của bạn', {
                         theme: 'primary',
                         position: 'top-center',
-                        duration: 1000
+                        duration: 1500
                     })
-                })
+                } else {
+                    let body = this.getBody(this.mail)
+                    console.log(body)
+
+                    await privKeyObj.decrypt('hoanganhlamno1')
+                    const options = {
+                        message: openpgp.message.readArmored(body),
+                        privateKeys: [privKeyObj]
+                    }
+
+                    openpgp.decrypt(options).then(plaintext => {
+                        this.decodedText = plaintext.data
+                        this.$toasted.show('Giải mã thành công', {
+                            theme: 'bubble',
+                            position: 'top-center',
+                            duration: 1500
+                        })
+                    }).catch(err => {
+                        console.log(err)
+                        this.$toasted.show('Khóa của bạn không hợp lệ', {
+                            theme: 'primary',
+                            position: 'top-center',
+                            duration: 1500
+                        })
+                    })
+                }
             },
 
             deleteEmail() {
                 this.$axios.delete(deleteUrl + this.mail.id).then(res => {
                     console.log(res)
                     this.$emit('delete')
+                    this.$toasted.show('Xóa thành công', {
+                        theme: 'bubble',
+                        position: 'top-center',
+                        duration: 1500
+                    })
                 }).catch(err => {
                     console.log(err)
                     this.$toasted.show('Xóa lỗi, làm ơn thử lại!', {
                         theme: 'primary',
                         position: 'top-center',
-                        duration: 1000
+                        duration: 1500
                     })
                 })
             },
