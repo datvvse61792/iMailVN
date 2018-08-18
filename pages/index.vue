@@ -108,7 +108,7 @@
             </div>
             <div class="mb-3">
                 <p class="btn-group">
-                    <button class="btn btn-sm btn-success" @click="encodeing">Mã hóa</button>
+                    <button class="btn btn-sm btn-success" @click="encoding">Mã hóa</button>
                     <button class="btn btn-sm btn-success" @click="sendMail(false)">Gửi</button>
                 </p>
             </div>
@@ -118,11 +118,11 @@
         </b-modal>
     </b-container>
 
-
     <b-container class="white-box" v-else>
-        <h1 class="cover-heading">Cover your page.</h1>
-        <p class="lead">Cover is a one-page template for building simple and beautiful home pages. Download, edit the
-            text, and add your own fullscreen background photo to make it your own.</p>
+        <h1 class="cover-heading">Chào mừng bạn đến với iMail.</h1>
+        <p class="lead">Tại iMail, bạn sẽ hoàn toàn yên tâm sử dụng email của mình mà không cần phải lo lắng đến việc bị
+            đánh cắp nội dung. Chúng tôi sẽ giúp bạn mã hóa thư của mình trước khi gửi và đảm bảo sẽ chỉ có người nhận
+            đọc được nội dung.</p>
         <p class="lead">
             <button class="btn btn-lg btn-primary btn-block" @click="google()">Đăng nhập Gmail</button>
         </p>
@@ -333,6 +333,8 @@
                 emailLines.push('Content-type: text/plain;charset=UTF-8')
                 emailLines.push('Content-Transfer-Encoding: 8bit')
                 emailLines.push('MIME-Version: 1.0')
+                subject = Buffer.from(subject).toString('base64')
+                subject = '=?utf-8?B?' + subject + '?='
                 emailLines.push('Subject: ' + subject)
                 emailLines.push('')
                 emailLines.push(message)
@@ -353,13 +355,16 @@
                 }
                 return null
             },
-            encodeing() {
+            encoding() {
                 let publicKey = this.findPublicKey(this.receiverEmail)
+                let privKeyObj = openpgp.key.readArmored(localStorage.getItem('privateKey')).keys[0]
+                privKeyObj.decrypt('datdeptrai')
                 if (publicKey) {
                     console.log(publicKey)
                     let options = {
                         data: this.message,
-                        publicKeys: openpgp.key.readArmored(publicKey).keys
+                        publicKeys: openpgp.key.readArmored(publicKey).keys,
+                        privateKeys: [privKeyObj]
                     }
                     openpgp.encrypt(options).then(ciphertext => {
                         this.message = ciphertext.data

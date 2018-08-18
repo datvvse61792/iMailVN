@@ -11,14 +11,14 @@
             </div>
             <div class="footer">
                 <div class="btn-group" role="group" aria-label="First group">
-                    <b-btn @click="decodeEmail">
-                        <i class="mdi mdi-dark mdi-barcode-scan"></i>
+                    <b-btn @click="changeToDecrypt()">
+                        <i class="mdi mdi-dark mdi-barcode-scan">&nbsp;Giải mã</i>
                     </b-btn>
-                    <b-btn @click="showReply = !showReply">
-                        <i class="mdi mdi-dark mdi-reply"></i>
+                    <b-btn @click="changeToReply()">
+                        <i class="mdi mdi-dark mdi-reply">&nbsp;Trả lời</i>
                     </b-btn>
                     <b-btn @click="deleteEmail">
-                        <i class="mdi mdi-dark mdi-delete"></i>
+                        <i class="mdi mdi-dark mdi-delete">&nbsp;Xóa</i>
                     </b-btn>
                 </div>
             </div>
@@ -33,8 +33,24 @@
                         :max-rows="6">
                 </b-form-textarea>
             </div>
+            <b-button size="sm" variant="success" @click="encoding">
+                Mã Hóa
+            </b-button>
             <b-button size="sm" variant="success" @click="reply">
                 Gửi thường
+            </b-button>
+        </div>
+        <div v-if="enterPass" class="decode mb-3">
+            <h4>Giải mã nội dung thư</h4>
+            <div class="mb-3">
+                <b-input
+                        v-model="keyPassword"
+                        placeholder="nhập mật khẩu"
+                        type="password">
+                </b-input>
+            </div>
+            <b-button size="sm" variant="success" @click="decodeEmail">
+                Giải mã
             </b-button>
         </div>
     </div>
@@ -63,13 +79,16 @@
 
         data() {
             return {
+                contacts: [],
                 customToolbar: [
                     ['bold', 'italic', 'underline'],
                     [{'list': 'ordered'}, {'list': 'bullet'}],
                     ['image', 'code-block']
                 ],
                 showReply: false,
+                enterPass: false,
                 message: '',
+                keyPassword: '',
                 decodedText: null
             }
         },
@@ -80,7 +99,8 @@
                 let emailLines = []
                 emailLines.push('From: ' + this.$auth.user.email)
                 emailLines.push('To: ' + this.getEmailReceiver)
-                emailLines.push('Content-type: text/html;charset=iso-8859-1')
+                emailLines.push('Content-type: text/plain;charset=UTF-8')
+                emailLines.push('Content-Transfer-Encoding: 8bit')
                 emailLines.push('MIME-Version: 1.0')
                 emailLines.push('Subject: ' + this.getField(this.mail, 'Subject'))
                 emailLines.push('')
@@ -112,6 +132,7 @@
                 })
             },
             async decodeEmail() {
+                let publicKey = this.findPublicKey(this.getEmailReceiver)
                 let privKeyObj = openpgp.key.readArmored(localStorage.getItem('privateKey')).keys[0]
                 if (privKeyObj == null) {
                     this.$toasted.show('Chưa có key. Vui lòng Tạo key hoặc nhập key từ máy tính của bạn', {
@@ -122,13 +143,12 @@
                 } else {
                     let body = this.getBody(this.mail)
                     console.log(body)
-
-                    await privKeyObj.decrypt('hoanganhlamno1')
+                    await privKeyObj.decrypt(this.keyPassword)
                     const options = {
                         message: openpgp.message.readArmored(body),
+                        publicKeys: openpgp.key.readArmored(publicKey).keys,
                         privateKeys: [privKeyObj]
                     }
-
                     openpgp.decrypt(options).then(plaintext => {
                         this.decodedText = plaintext.data
                         this.$toasted.show('Giải mã thành công', {
@@ -146,7 +166,29 @@
                     })
                 }
             },
-
+            encoding() {
+                let publicKey = this.findPublicKey(this.getEmailReceiver)
+                if (publicKey) {
+                    console.log(publicKey)
+                    let options = {
+                        data: this.message,
+                        publicKeys: openpgp.key.readArmored(publicKey).keys
+                    }
+                    openpgp.encrypt(options).then(ciphertext => {
+                        this.message = ciphertext.data
+                    })
+                }
+            },
+            findPublicKey(email) {
+                for (let i in this.contacts) {
+                    console.log('Day la email : ' + this.contacts[i].email)
+                    if (this.contacts[i].email === email) {
+                        return this.contacts[i].key
+                    }
+                }
+                console.log('Tao khong tim thay ' + email)
+                return null
+            },
             deleteEmail() {
                 this.$axios.delete(deleteUrl + this.mail.id).then(res => {
                     console.log(res)
@@ -199,6 +241,15 @@
                 }
                 encodedBody = encodedBody.replace(/-/g, '+').replace(/_/g, '/').replace(/\s/g, '')
                 return decodeURIComponent(escape(window.atob(encodedBody)))
+            },
+            changeToDecrypt() {
+                this.enterPass = !this.enterPass
+                this.showReply = false
+            },
+
+            changeToReply() {
+                this.showReply = !this.showReply
+                this.enterPass = false
             }
         },
 
@@ -213,6 +264,11 @@
                     return this.getField(this.mail, 'From')
                 }
             }
+        },
+        async created() {
+            await this.$axios.get('/api/key').then(res => {
+                this.contacts = res.data
+            })
         }
     }
 </script>
