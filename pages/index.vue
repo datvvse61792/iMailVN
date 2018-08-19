@@ -108,7 +108,7 @@
             </div>
             <div class="mb-3">
                 <p class="btn-group">
-                    <button class="btn btn-sm btn-success" @click="encoding">Mã hóa</button>
+                    <button class="btn btn-sm btn-success" @click="encoding">Mã hóa</button>&nbsp;
                     <button class="btn btn-sm btn-success" @click="sendMail(false)">Gửi</button>
                 </p>
             </div>
