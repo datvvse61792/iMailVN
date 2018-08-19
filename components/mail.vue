@@ -97,20 +97,23 @@
             reply() {
                 let Buffer = require('safe-buffer').Buffer
                 let emailLines = []
+                let subject = this.getField(this.mail, 'Subject')
                 emailLines.push('From: ' + this.$auth.user.email)
                 emailLines.push('To: ' + this.getEmailReceiver)
                 emailLines.push('Content-type: text/plain;charset=UTF-8')
                 emailLines.push('Content-Transfer-Encoding: 8bit')
                 emailLines.push('MIME-Version: 1.0')
-                emailLines.push('Subject: ' + this.getField(this.mail, 'Subject'))
+                console.log('Subject ban đầu: ' + subject)
+                subject = Buffer.from(subject).toString('base64')
+                console.log('Subject được mã hóa thành: ' + subject)
+                subject = '=?utf-8?B?' + subject + '?='
+                emailLines.push('Subject: ' + subject)
                 emailLines.push('')
                 emailLines.push(this.message)
                 let email = emailLines.join('\r\n').trim()
-                let base64EncodedEmail = new Buffer(email, 'ascii').toString('base64')
+                let base64EncodedEmail = new Buffer(email, 'UTF-8').toString('base64')
                 let raw = base64EncodedEmail.replace(/\+/g, '-').replace(/\//g, '_')
-
                 let threadId = this.mail.id
-
                 if (this.mail.threadId) {
                     threadId = this.mail.threadId
                 }

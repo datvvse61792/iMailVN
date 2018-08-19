@@ -88,7 +88,6 @@
                     let index = regex.exec(result).index - 1
                     this.publicKey = result.substring(0, index)
                     this.privateKey = result.substring(index + 1, result.length - 1)
-                    // console.log(this.publicKey)
                     localStorage.setItem('email', this.$auth.user.email)
                     localStorage.setItem('privateKey', this.privateKey)
                     localStorage.setItem('publicKey', this.publicKey)
