@@ -8,32 +8,32 @@
                         </b-btn>
                     </div>
                     <div class="list-group bg-trans pad-btm bord-btm white-panel">
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('INBOX'),activate(1)"
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('INBOX', ''), activate(1), resetPageTokens()"
                                 :class="{ active : active_el == 1 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-down"></i>
                             Hòm thư
                         </button>
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('DRAFT'),activate(2)"
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('DRAFT', ''), activate(2), resetPageTokens()"
                                 :class="{ active : active_el == 2 }">
                             <i class="mdi mdi-dark mdi-email-open"></i>
                             Nháp
                         </button>
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SENT'),activate(3)"
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SENT', ''),activate(3), resetPageTokens()"
                                 :class="{ active : active_el == 3 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-up"></i>
                             Đã gửi
                         </button>
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SPAM'),activate(4)"
+                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SPAM', ''),activate(4), resetPageTokens()"
                                 :class="{ active : active_el == 4 }">
                             <i class="mdi mdi-dark mdi-alien"></i>
                             Spam
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('TRASH'),activate(5)"
+                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('TRASH', ''),activate(5), resetPageTokens()"
                                 :class="{ active : active_el == 5 }">
                             <i class="mdi mdi-dark mdi-delete"></i>
                             Thùng rác
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('UNREAD')">
+                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('UNREAD', '')">
                             <i class="mdi mdi-dark mdi-delete"></i>
                             UNREAD
                         </button>
@@ -184,7 +184,6 @@
                 message: '',
                 subject: '',
                 receiverEmail: '',
-                previousToken: '',
                 currentLabel: 'INBOX',
                 active_el: 0
             }
@@ -245,9 +244,10 @@
             },
 
             async previous() {
+                this.pageTokens.splice(this.pageTokens.length - 1, 1)
                 let pageToken = ''
                 if (this.pageTokens.length > 2) {
-                    pageToken = this.pageTokens[this.pageTokens.length - 3]
+                    pageToken = this.pageTokens[this.pageTokens.length - 2]
                 }
                 await this.fetchWithLabel(this.currentLabel, pageToken)
                 if (this.pageTokens.length > 3) {
@@ -337,6 +337,11 @@
             activate: function (el) {
                 this.active_el = el
             },
+
+            resetPageTokens() {
+                this.pageTokens = ['', '']
+            },
+
             makeBody(to, from, subject, message) {
                 let Buffer = require('safe-buffer').Buffer
                 let emailLines = []
