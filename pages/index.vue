@@ -144,8 +144,11 @@
             let nextPageToken = ''
             let emails = []
             let contacts = []
-            if (app.$auth.user) {
+            await app.$auth.fetchUser()
+            console.log(app.$auth.loggedIn)
+            if (app.$auth.loggedIn) {
                 const mails = await app.$axios.$get(url)
+                nextPageToken = mails.nextPageToken
                 for (let i in mails.messages) {
                     let mail = await app.$axios.get(detailUrl + mails.messages[i].id + '?format=full')
                     emails.push(mail.data)
@@ -153,7 +156,7 @@
             }
             return {
                 emails: emails,
-                nextPageToken: nextPageToken,
+                pageTokens: ['', '', nextPageToken],
                 contacts
             }
         },
@@ -196,51 +199,60 @@
                 })
             },
 
-            async fetchMailList(label, action) {
+            async fetchMailList(label, action, pageToken) {
                 this.emails = []
                 if (action === 'new') {
-                    this.nextPageToken = ''
+                    pageToken = ''
+                    this.pageTokens = []
                 }
-
                 let qLabel = ''
-
+                let qPageToken = ''
                 if (label !== '') {
                     qLabel = '&labelIds=' + label
                 }
 
-                let query = url + '&pageToken=' + this.nextPageToken + qLabel
+                if (pageToken !== '') {
+                    qPageToken = '&pageToken=' + pageToken
+                }
+
+                let query = url + qPageToken + qLabel
 
                 let newEmails = []
 
                 await this.$axios.get(query).then(res => {
-                    this.nextPageToken = res.data.nextPageToken
+                    this.pageTokens.push(res.data.nextPageToken)
                     newEmails = res.data.messages
                 })
 
                 for (let i in newEmails) {
                     let mail = await this.$axios.get(detailUrl + newEmails[i].id + '?format=full')
-                    console.log(mail)
                     this.emails.push(mail.data)
                 }
             },
 
-            fetchWithLabel(label) {
+            async fetchWithLabel(label, pageToken) {
                 if (label === '') {
-                    this.fetchMailList(this.currentLabel, '')
+                    await this.fetchMailList(this.currentLabel, 'new', pageToken)
                 } else {
                     this.currentLabel = label
-                    this.fetchMailList(this.currentLabel, 'new')
+                    await this.fetchMailList(this.currentLabel, '', pageToken)
                 }
             },
 
-            next() {
-                this.previousToken = this.nextPageToken
-                this.fetchWithLabel('')
+            async next() {
+                let pageToken = this.pageTokens[this.pageTokens.length - 1]
+                await this.fetchWithLabel(this.currentLabel, pageToken)
             },
 
-            previous() {
-                this.nextPageToken = this.previousToken
-                this.fetchWithLabel('')
+            async previous() {
+                let pageToken = ''
+                if (this.pageTokens.length > 2) {
+                    pageToken = this.pageTokens[this.pageTokens.length - 3]
+                }
+                await this.fetchWithLabel(this.currentLabel, pageToken)
+                if (this.pageTokens.length > 3) {
+                    this.pageTokens.splice(this.pageTokens.length - 2, 2)
+                }
             },
 
             mailDelete() {
