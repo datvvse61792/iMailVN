@@ -48,7 +48,7 @@
             async generateKey() {
                 let options = {
                     userIds: [{name: this.$auth.user.name, email: this.$auth.user.email}],
-                    numBits: 2048,
+                    curve: 'curve25519',
                     passphrase: this.passphrase
                 }
                 await openpgp.generateKey(options).then(key => {

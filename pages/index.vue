@@ -8,34 +8,35 @@
                         </b-btn>
                     </div>
                     <div class="list-group bg-trans pad-btm bord-btm white-panel">
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('INBOX', ''), activate(1), resetPageTokens()"
+                        <button class=" list-group-item btn btn-link"
+                                @click="fetchWithLabel('INBOX', ''), activate(1)"
                                 :class="{ active : active_el == 1 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-down"></i>
                             Hòm thư
                         </button>
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('DRAFT', ''), activate(2), resetPageTokens()"
+                        <button class=" list-group-item btn btn-link"
+                                @click="fetchWithLabel('DRAFT', ''), activate(2)"
                                 :class="{ active : active_el == 2 }">
                             <i class="mdi mdi-dark mdi-email-open"></i>
                             Nháp
                         </button>
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SENT', ''),activate(3), resetPageTokens()"
+                        <button class=" list-group-item btn btn-link"
+                                @click="activate(3), fetchWithLabel('SENT'), resetPageIndex()"
                                 :class="{ active : active_el == 3 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-up"></i>
                             Đã gửi
                         </button>
-                        <button class=" list-group-item btn btn-link" @click="fetchWithLabel('SPAM', ''),activate(4), resetPageTokens()"
+                        <button class=" list-group-item btn btn-link"
+                                @click="fetchWithLabel('SPAM', ''), activate(4), resetPageIndex()"
                                 :class="{ active : active_el == 4 }">
                             <i class="mdi mdi-dark mdi-alien"></i>
                             Spam
                         </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('TRASH', ''),activate(5), resetPageTokens()"
+                        <button class="list-group-item btn btn-link"
+                                @click="fetchWithLabel('TRASH', ''), activate(5), resetPageIndex()"
                                 :class="{ active : active_el == 5 }">
                             <i class="mdi mdi-dark mdi-delete"></i>
                             Thùng rác
-                        </button>
-                        <button class="list-group-item btn btn-link" @click="fetchWithLabel('UNREAD', '')">
-                            <i class="mdi mdi-dark mdi-delete"></i>
-                            UNREAD
                         </button>
                     </div>
                 </div>
@@ -49,17 +50,17 @@
                                 </h2>
                             </b-navbar-brand>
                             <b-navbar-nav right>
-                                <b-button size="sm" class="my-2 my-sm-0" variant="success" @click="previous">
+                                <b-button size="sm" class="my-2 my-sm-0" variant="success" @click="previousPage">
                                     <i class="mdi mdi-light mdi-arrow-left"></i>
                                 </b-button>
-                                <b-button size="sm" class="my-2 my-sm-0" variant="success" @click="next">
+                                <b-button size="sm" class="my-2 my-sm-0" variant="success" @click="nextPage">
                                     <i class="mdi mdi-light mdi-arrow-right"></i>
                                 </b-button>
                             </b-navbar-nav>
                         </b-navbar>
                     </div>
                     <div class="mail-list has-text-left">
-                        <b-table :fields="fields" :items="emails">
+                        <b-table :fields="fields" :items="displayEmail">
                             <template slot="title" slot-scope="data">
                                 <a href="javascript:void(0);"><h5 @click="readEmail(data.item)">
                                     <span class="icon left">
@@ -144,9 +145,13 @@
             let nextPageToken = ''
             let emails = []
             let contacts = []
-            await app.$auth.fetchUser()
-            console.log(app.$auth.loggedIn)
+            try {
+                await app.$auth.fetchUser()
+            } catch (e) {
+                console.log(e)
+            }
             if (app.$auth.loggedIn) {
+                console.log('Đi sâu vào trong đây')
                 const mails = await app.$axios.$get(url)
                 nextPageToken = mails.nextPageToken
                 for (let i in mails.messages) {
@@ -156,8 +161,9 @@
             }
             return {
                 emails: emails,
-                pageTokens: ['', '', nextPageToken],
-                contacts
+                nextPageToken: nextPageToken,
+                contacts,
+                pageIndex: 5
             }
         },
 
@@ -198,11 +204,9 @@
                 })
             },
 
-            async fetchMailList(label, action, pageToken) {
-                this.emails = []
+            async fetchMailList(label, action) {
                 if (action === 'new') {
-                    pageToken = ''
-                    this.pageTokens = []
+                    this.nextPageToken = ''
                 }
                 let qLabel = ''
                 let qPageToken = ''
@@ -210,16 +214,16 @@
                     qLabel = '&labelIds=' + label
                 }
 
-                if (pageToken !== '') {
-                    qPageToken = '&pageToken=' + pageToken
+                if (this.nextPageToken !== '') {
+                    qPageToken = '&pageToken=' + this.nextPageToken
                 }
-
+                console.log('Đã vào tới đây và label là ' + label + ' còn đây là token : ' + this.nextPageToken)
                 let query = url + qPageToken + qLabel
 
                 let newEmails = []
 
                 await this.$axios.get(query).then(res => {
-                    this.pageTokens.push(res.data.nextPageToken)
+                    this.nextPageToken = res.data.nextPageToken
                     newEmails = res.data.messages
                 })
 
@@ -229,12 +233,12 @@
                 }
             },
 
-            async fetchWithLabel(label, pageToken) {
+            async fetchWithLabel(label) {
                 if (label === '') {
-                    await this.fetchMailList(this.currentLabel, 'new', pageToken)
+                    await this.fetchMailList(this.currentLabel, 'new')
                 } else {
                     this.currentLabel = label
-                    await this.fetchMailList(this.currentLabel, '', pageToken)
+                    await this.fetchMailList(this.currentLabel, '')
                 }
             },
 
@@ -252,6 +256,21 @@
                 await this.fetchWithLabel(this.currentLabel, pageToken)
                 if (this.pageTokens.length > 3) {
                     this.pageTokens.splice(this.pageTokens.length - 2, 2)
+                }
+            },
+
+            async nextPage() {
+                if (this.pageIndex === this.emails.length) {
+                    await this.fetchWithLabel(this.currentLabel, this.pageIndex)
+                }
+                this.pageIndex += 5
+            },
+
+            async previousPage() {
+                if (this.pageIndex === 5 || this.pageIndex < 5) {
+                    this.pageIndex = 5
+                } else {
+                    this.pageIndex -= 5
                 }
             },
 
@@ -338,8 +357,11 @@
                 this.active_el = el
             },
 
-            resetPageTokens() {
-                this.pageTokens = ['', '']
+            resetPageIndex(label) {
+                this.pageIndex = 5
+                this.emails = []
+                this.fetchMailList(label, 'new')
+                this.nextPageToken = ''
             },
 
             makeBody(to, from, subject, message) {
@@ -374,14 +396,11 @@
             },
             encoding() {
                 let publicKey = this.findPublicKey(this.receiverEmail)
-                let privKeyObj = openpgp.key.readArmored(localStorage.getItem('privateKey')).keys[0]
-                privKeyObj.decrypt('datdeptrai')
                 if (publicKey) {
                     console.log(publicKey)
                     let options = {
                         data: this.message,
-                        publicKeys: openpgp.key.readArmored(publicKey).keys,
-                        privateKeys: [privKeyObj]
+                        publicKeys: openpgp.key.readArmored(publicKey).keys
                     }
                     openpgp.encrypt(options).then(ciphertext => {
                         this.message = ciphertext.data
@@ -398,6 +417,12 @@
                         duration: 1000
                     })
                 }
+            }
+        },
+
+        computed: {
+            displayEmail() {
+                return this.emails.slice(this.pageIndex - 5, this.pageIndex)
             }
         },
         async created() {
