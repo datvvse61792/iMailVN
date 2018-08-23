@@ -21,19 +21,19 @@
                             Nháp
                         </button>
                         <button class=" list-group-item btn btn-link"
-                                @click="activate(3), fetchWithLabel('SENT'), resetPageIndex()"
+                                @click="activate(3), fetchWithLabel('SENT', '')"
                                 :class="{ active : active_el == 3 }">
                             <i class="mdi mdi-dark mdi-inbox-arrow-up"></i>
                             Đã gửi
                         </button>
                         <button class=" list-group-item btn btn-link"
-                                @click="fetchWithLabel('SPAM', ''), activate(4), resetPageIndex()"
+                                @click="fetchWithLabel('SPAM', ''), activate(4)"
                                 :class="{ active : active_el == 4 }">
                             <i class="mdi mdi-dark mdi-alien"></i>
                             Spam
                         </button>
                         <button class="list-group-item btn btn-link"
-                                @click="fetchWithLabel('TRASH', ''), activate(5), resetPageIndex()"
+                                @click="fetchWithLabel('TRASH', ''), activate(5)"
                                 :class="{ active : active_el == 5 }">
                             <i class="mdi mdi-dark mdi-delete"></i>
                             Thùng rác
@@ -151,7 +151,6 @@
                 console.log(e)
             }
             if (app.$auth.loggedIn) {
-                console.log('Đi sâu vào trong đây')
                 const mails = await app.$axios.$get(url)
                 nextPageToken = mails.nextPageToken
                 for (let i in mails.messages) {
@@ -206,7 +205,9 @@
 
             async fetchMailList(label, action) {
                 if (action === 'new') {
+                    this.pageIndex = 5
                     this.nextPageToken = ''
+                    this.emails = []
                 }
                 let qLabel = ''
                 let qPageToken = ''
@@ -233,29 +234,13 @@
                 }
             },
 
-            async fetchWithLabel(label) {
-                if (label === '') {
-                    await this.fetchMailList(this.currentLabel, 'new')
-                } else {
-                    this.currentLabel = label
+            async fetchWithLabel(label, pageIndex) {
+                this.currentLabel = label
+                if (label !== '' && pageIndex !== '') {
+                    console.log('Có vào đây với lable là ' + this.currentLabel)
                     await this.fetchMailList(this.currentLabel, '')
-                }
-            },
-
-            async next() {
-                let pageToken = this.pageTokens[this.pageTokens.length - 1]
-                await this.fetchWithLabel(this.currentLabel, pageToken)
-            },
-
-            async previous() {
-                this.pageTokens.splice(this.pageTokens.length - 1, 1)
-                let pageToken = ''
-                if (this.pageTokens.length > 2) {
-                    pageToken = this.pageTokens[this.pageTokens.length - 2]
-                }
-                await this.fetchWithLabel(this.currentLabel, pageToken)
-                if (this.pageTokens.length > 3) {
-                    this.pageTokens.splice(this.pageTokens.length - 2, 2)
+                } else {
+                    await this.fetchMailList(this.currentLabel, 'new')
                 }
             },
 
@@ -355,13 +340,6 @@
 
             activate: function (el) {
                 this.active_el = el
-            },
-
-            resetPageIndex(label) {
-                this.pageIndex = 5
-                this.emails = []
-                this.fetchMailList(label, 'new')
-                this.nextPageToken = ''
             },
 
             makeBody(to, from, subject, message) {

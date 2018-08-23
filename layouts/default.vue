@@ -4,7 +4,7 @@
             <div class="inner">
                 <h3 class="masthead-brand">
 	
-                    <nuxt-link to="/">iMail</nuxt-link>
+                    <a href="/">iMail</a>
 						<img src="/logo.png" height="5%" width="5%">
                 </h3>
                 <nav class="nav nav-masthead justify-content-center">
